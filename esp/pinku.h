@@ -1,7 +1,7 @@
 //Timer
 const long interval=20000;
-String tON ="17:00";
-String tOFF="05:00";
+String tON ="14:12";
+String tOFF="14:14";
 
 //Telegram
 #define chatID -521307798
