@@ -64,12 +64,14 @@ void setup() {
   //TEST KONEKSI
   if (myBot.testConnection()) {
     Serial.println("\nSIGNAL OK");
+    lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("TELEGRAM OK");
     delay(2000);
   }
   else {
     Serial.println("\nERROR NO SIGNAL");
+    lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("TELEGRAM-WIFI FAILED");
     delay(2000);
