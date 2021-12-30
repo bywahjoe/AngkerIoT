@@ -6,7 +6,9 @@
 #include "pinku.h"
 #include "RTClib.h"
 #include <HTTPClient.h>
+
 #define URLWEB "https://iot.bywahjoe.com/post.php"
+#define TIMERWEB "https://iot.bywahjoe.com/timer.php"
 
 String APIKEY = "sendIP4";
 char daysOfTheWeek[7][12] = {"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
@@ -48,13 +50,12 @@ void setup() {
   lcd.print(" BYWAHJOE");
   delay(1500);
   lcd.clear();
-  
+
   lcd.setCursor(0, 0);
   lcd.print("CONNECTING....");
   lcd.setCursor(0, 1);
   lcd.print("SSID : ");
   lcd.print(ssid);
-
 
   Serial.println("\nSTART TELEGRAM -- CONECT WIFI");
   myBot.wifiConnect(ssid, pass); //WIFI CONECT
@@ -76,46 +77,47 @@ void setup() {
     lcd.print("TELEGRAM-WIFI FAILED");
     delay(2000);
   }
-
+  parseTimer();
+//  while(1);
+  
   firstMessage();
   lcd.clear();
-
 }
 
 void loop() {
-//  relayAON();
-//  relayBON();
-//  delay(10000);
-//  relayAOFF();
-//  relayBOFF();
-//  delay(5000);
+  //  relayAON();
+  //  relayBON();
+  //  delay(10000);
+  //  relayAOFF();
+  //  relayBOFF();
+  //  delay(5000);
 
-    suhu = dht.readTemperature();
-    humid = dht.readHumidity();
-    lux = luxMeter.readLightLevel();
+  suhu = dht.readTemperature();
+  humid = dht.readHumidity();
+  lux = luxMeter.readLightLevel();
 
-    int vGas = analogRead(sensorGas);
-    int vAir = analogRead(sensorAir);
-    gas = map(vGas, 0, 4095, 0, 100);
-    air = map(vAir, 0, 4095, 0, 100);
+  int vGas = analogRead(sensorGas);
+  int vAir = analogRead(sensorAir);
+  gas = map(vGas, 0, 4095, 0, 100);
+  air = map(vAir, 0, 4095, 0, 100);
 
-    Serial.print("Suhu : "); Serial.println(suhu);
-    Serial.print("Humid: "); Serial.println(humid);
-    Serial.print("Lux  : "); Serial.println(lux);
-    Serial.print("Gas  : "); Serial.print(vGas); Serial.print("[*]"); Serial.println(gas);
-    Serial.print("Air  : "); Serial.print(vAir); Serial.print("[*]"); Serial.println(air);
+  Serial.print("Suhu : "); Serial.println(suhu);
+  Serial.print("Humid: "); Serial.println(humid);
+  Serial.print("Lux  : "); Serial.println(lux);
+  Serial.print("Gas  : "); Serial.print(vGas); Serial.print("[*]"); Serial.println(gas);
+  Serial.print("Air  : "); Serial.print(vAir); Serial.print("[*]"); Serial.println(air);
 
-    viewSensor();
-    delay(2000);
-    viewTimer();
-    delay(1500);
+  viewSensor();
+  delay(2000);
+  viewTimer();
+  delay(1500);
 
-    nows = millis();
-    if (nows - before >= interval) {
-      logTelegram();
-      pushWeb();
-      before = nows;
-    }
+  nows = millis();
+  if (nows - before >= interval) {
+    logTelegram();
+    pushWeb();
+    before = nows;
+  }
 }
 void relayAON() {
   digitalWrite(relayA, LOW);
@@ -200,19 +202,19 @@ void viewSensor() {
 void kirim(String pesan) {
   myBot.sendMessage(chatID, pesan);
 }
-void pushWeb(){
-  String d1=String(suhu);
-  String d2=String(humid);
-  String d3=String(lux);
-  String d4=String(gas);
-  String d5=String(air);;
-  
+void pushWeb() {
+  String d1 = String(suhu);
+  String d2 = String(humid);
+  String d3 = String(lux);
+  String d4 = String(gas);
+  String d5 = String(air);;
+
   HTTPClient postWeb;
 
   postWeb.begin(URLWEB);
   postWeb.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-  String dataku = "apiKEY=" + APIKEY + "&d1=" + d1 + "&d2=" + d2+ "&d3=" + d3+ "&d4=" + d4+ "&d5=" + d5;
+  String dataku = "apiKEY=" + APIKEY + "&d1=" + d1 + "&d2=" + d2 + "&d3=" + d3 + "&d4=" + d4 + "&d5=" + d5;
   Serial.println(dataku);
 
   int httpResponseCode = postWeb.POST(dataku);
@@ -226,7 +228,7 @@ void pushWeb(){
   //        Serial.print("Error code: ");
   //        Serial.println(httpResponseCode);
   //      }
-  postWeb.end(); 
+  postWeb.end();
 }
 void logTelegram() {
   String pesan;
@@ -256,5 +258,48 @@ void firstMessage() {
   kirim(pesan);
 }
 void parseTimer() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Parsing Timer.....");  
+  lcd.setCursor(0, 1);
+  
+  HTTPClient http;
+  http.begin(TIMERWEB);
 
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode > 0) {
+    
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    String payload = http.getString();
+    Serial.println(payload);
+
+    lcd.print(payload);
+      
+    String dataku[2];
+    int sstart = 0;
+    for (int i = 0; i < payload.length(); i++) {
+      if (payload[i] == ',') {
+        sstart = 1;
+        continue;
+      };
+      dataku[sstart] += payload[i];
+    }
+    
+    //Save Parsing
+    tON=dataku[0];
+    tOFF=dataku[1];
+    
+    Serial.print("TON: ");Serial.println(tON);
+    Serial.print("TOFF: ");Serial.println(tOFF);
+
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+    lcd.print(httpResponseCode);
+  }
+  
+  http.end();
 }
